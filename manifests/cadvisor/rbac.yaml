@@ -1,0 +1,2 @@
+# cAdvisor does not require Kubernetes API permissions.
+# This file is intentially left blank for structural consistency. 
