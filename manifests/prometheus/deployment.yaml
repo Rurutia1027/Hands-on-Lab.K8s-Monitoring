@@ -40,6 +40,9 @@ spec:
               mountPath: /etc/prometheus/
             - name: prometheus-data
               mountPath: /prometheus
+            - name: etcd-certs
+              secret: 
+                secretName: etcd-certs 
       volumes: 
         - name: prometheus-config
           configMap: 
