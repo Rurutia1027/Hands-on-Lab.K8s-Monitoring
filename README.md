@@ -32,30 +32,42 @@ This repository offers a comprehensive solution for setting up a local Kubernete
 
 ## Directory Structure 
 ```
-monitoring-stack/
-├── manifests/          # YAML manifests for all components
+.
+├── README.md
+├── design-doc
+│   └── monitor-stack.md
+├── manifests
+│   ├── alertmanager
+│   ├── cadvisor
+│   │   ├── daemonset.yaml
+│   │   ├── rbac.yaml
+│   │   └── service.yaml
+│   ├── grafana
+│   │   ├── deployment.yaml
+│   │   ├── pvc.yaml
+│   │   ├── rbac.yaml
+│   │   └── service.yaml
+│   ├── kube-state-metrics
+│   │   ├── deployment.yaml
+│   │   ├── rbac.yaml
+│   │   └── service.yaml
 │   ├── namespace.yaml
-│   ├── node-exporter-daemonset.yaml
-│   ├── cadvisor-daemonset.yaml
-│   ├── kube-state-metrics/
-│   │   ├── deployment.yaml
+│   ├── node-exporter
+│   │   ├── daemonset.yaml
+│   │   ├── rbac.yaml
 │   │   └── service.yaml
-│   ├── prometheus/
-│   │   ├── configmap.yaml
-│   │   ├── deployment.yaml
-│   │   └── service.yaml
-│   ├── grafana/
-│   │   ├── deployment.yaml
-│   │   └── service.yaml
-│   └── alertmanager/
+│   └── prometheus
 │       ├── configmap.yaml
-│       └── deployment.yaml
-├── scripts/            # Helper scripts
-│   ├── start-kind-cluster.sh          # Script to launch a local Kind cluster (1 master + 2 workers)
-│   ├── wait-cluster-ready.sh          # Script to wait until cluster components (API server, kubelet, etcd) are ready
-│   └── monitoring-health-check.sh     # Script to check monitoring stack pods and metrics endpoints
-└── design-doc/         # Metrics & SLA/KPI design, dashboard plans
-    └── metrics-design.md
+│       ├── deployment.yaml
+│       ├── pvc.yaml
+│       ├── rbac.yaml
+│       └── service.yaml
+└── scripts
+    ├── configs
+    │   └── kind-config.yaml
+    ├── k8s-cluster-health.sh
+    ├── monitoring-health-check.sh
+    └── setup-k8s-cluster.sh
 ```
 
 ## Deployment Order 
