@@ -1,7 +1,7 @@
 #!/bin/sh 
 # setup-k8s-cluster.sh
 
-CLUSTER_NAME="k8s-cluster-monitoring"
+CLUSTER_NAME="k8s-cluster-monitoring-proj"
 CONFIG_FILE="configs/kind-config.yaml"
 
 echo "Creating Kind cluster: $CLUSTER_NAME ..."
