@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: cadvisor
-  namespace: monitoring 
+  namespace: metrics 
   labels:
     app: cadvisor
 spec:
@@ -13,51 +13,49 @@ spec:
     metadata:
       labels: 
         app: cadvisor 
-  spec:
-    hostPID: true 
-    hostNetwork: true 
-    nodeSelector: 
-      exporter-node: "true"
-    containers:
-      - name: cadvisor 
-        image: gcr.io/cadvisor/cadvisor:v0.49.1
-        imagePullPolicy: IfNotPresent 
-        securityContext:
-          privileged: true 
-        ports:
-          - name: http
-            containerPort: 8080
-            hostPort: 8080
-        volumeMounts:
-          - name: rootfs
-            mountPath: /rootfs
-            readyOnly: true 
-
-          - name: var-run 
-            mountPath: /var/run
-            readyOnly: false 
-
-          - name: sys 
-            mountPath: /sys
-            readOnly: true 
-
-          - name: docker 
-            mountPath: /var/lib/docker
-            readOnly: true 
+    spec:
+      hostPID: true 
+      hostNetwork: true 
+      nodeSelector: 
+        exporter-node: "true"
+      containers:
+        - name: cadvisor 
+          image: gcr.io/cadvisor/cadvisor:v0.47.1
+          imagePullPolicy: IfNotPresent 
+          securityContext:
+            privileged: true 
+          ports:
+            - name: http
+              containerPort: 8080
+              hostPort: 8080
+          volumeMounts:
+            - name: rootfs
+              mountPath: /rootfs
+              readOnly: true 
+            - name: var-run 
+              mountPath: /var/run
+              readOnly: false 
+            - name: sys 
+              mountPath: /sys
+              readOnly: true 
+            - name: docker 
+              mountPath: /var/lib/docker
+              readOnly: true 
     
-    volumes:
-      - name: rootfs 
-        hostPath:
-          path: /
-          
-      - name: var-run 
-        hostPath:
-          path: /var/run 
-
-      - name: sys 
-        hostPath: 
-          path: /sys 
-
-      - name: docker 
-        hostPath: 
-          path: /var/lib/docker 
+      volumes:
+        - name: rootfs 
+          hostPath:
+            path: /
+            type: Directory
+        - name: var-run 
+          hostPath:
+            path: /var/run 
+            type: Directory
+        - name: sys 
+          hostPath: 
+            path: /sys 
+            type: Directory
+        - name: docker 
+          hostPath: 
+            path: /var/lib/docker 
+            type: DirectoryOrCreate

@@ -2,11 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: prometheus
-  namespace: monitoring
+  namespace: metricss
   labels: 
     app: prometheus 
 spec:
-  replicas: 1 
+  replicas: 1
   selector: 
     matchLabels: 
       app: prometheus
@@ -19,7 +19,7 @@ spec:
       containers:
         - name: prometheus
           image: prom/prometheus:v2.52.0
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: IfNotPresent        
           args: 
             - "--config.file=/etc/prometheus/prometheus.yml"
             - "--storage.tsdb.path=/prometheus"
@@ -40,9 +40,6 @@ spec:
               mountPath: /etc/prometheus/
             - name: prometheus-data
               mountPath: /prometheus
-            - name: etcd-certs
-              secret: 
-                secretName: etcd-certs 
       volumes: 
         - name: prometheus-config
           configMap: 

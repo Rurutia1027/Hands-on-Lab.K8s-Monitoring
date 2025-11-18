@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment 
 metadata:
   name: kube-state-metrics
-  namespace: monitoring
+  namespace: metrics
   labels:
     app.kubernetes.io/name: kube-state-metrics
     app.kubernetes.io/component: exporter
@@ -27,6 +27,18 @@ spec:
               containerPort: 8080
             - name: telemetry
               containerPort: 8081
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe: 
+            httpGet:
+              path: /metrics
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
           args:
             - --resources=pods 
             - --resources=deployments
@@ -37,7 +49,6 @@ spec:
             - --resources=jobs
             - --resources=services
             - --resources=namespaces
-            - --resources=events
           resources: 
             requests:
               cpu: 50m 

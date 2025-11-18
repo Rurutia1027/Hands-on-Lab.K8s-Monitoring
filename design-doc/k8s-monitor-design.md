@@ -66,3 +66,44 @@ Fundamental for pod/container resource metrics.
 **Type**: Native 
 **Endpoint**: `/metrics`
 
+**Metrics collected**:
+- Node conditions 
+- Pod lifecycle events
+- Image info 
+- Runtime info (containerd/docker)
+- Kubelet performance 
+- Pressure metrics (disk, memory, PID)
+
+Why needed: 
+Critical health signals for node and runtime behavior 
+
+
+--- 
+
+## Pod/Application Layer Monitoring 
+This layer covers pod states, workload behavior, and application-level performance. 
+
+### kube-state-metrics (KSM)
+**Type**: Third-party 
+**Deployment**: Deployment 
+**Endpoint**: `http://kube-state-metrics.monitoring.svc:8080/metrics`
+**Metrics collected**(cluster state, not CPU/memory):
+- Deployment replica counts
+- StatefulSets / DaemonSets states 
+- Node labels, taints
+- Pod phases: Pending / Running / Succeeded / Failed 
+- PersistentVolume states 
+- Service / Ingress state 
+
+**Why needed**: 
+Provides the logical state-not performance -- for SRE alerts such as: 
+- Deployment unavailable
+- Pod CrashLoopBackOff 
+- Node NotReady 
+
+### Application Instrumentation (Prometheus Client Libraries)
+**Type**: Third-party (app exposes its own `/metrics`)
+**Endpoint**: `http://<pod-ip>:8080/metrics` (or app-defined)
+
+
+

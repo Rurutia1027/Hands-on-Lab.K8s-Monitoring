@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: prometheus-config
-  namespace: monitoring
+  namespace: metrics
   labels:
     app: prometheus
 data:
@@ -57,20 +57,6 @@ data:
         relabel_configs:
           - source_labels: [__meta_kubernetes_service_name]
             regex: 'kube-scheduler'
-            action: keep
-
-      # --- etcd (requires cert if enabled) ---
-      - job_name: 'etcd'
-        scheme: https
-        tls_config:
-          ca_file: /etc/prometheus/etcd-certs/ca.crt
-          cert_file: /etc/prometheus/etcd-certs/client.crt
-          key_file: /etc/prometheus/etcd-certs/client.key
-        kubernetes_sd_configs:
-          - role: endpoints
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_service_name]
-            regex: 'etcd'
             action: keep
 
       # --- Kubelet Metrics (node runtime + pod stats) ---

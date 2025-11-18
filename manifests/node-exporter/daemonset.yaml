@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: node-exporter
-  namespace: monitoring
+  namespace: metrics
   labels:
     app: node-exporter
 spec:
@@ -16,18 +16,16 @@ spec:
         app: node-exporter 
 
     spec:
-      hostPID: true
-      hostNetwork: true
-
-      nodeSelector:
-        exporter-node: "true" 
-
       containers:
         - name: node-exporter
           image: prom/node-exporter:v1.7.0
           imagePullPolicy: IfNotPresent
           args:
             - "--path.rootfs=/host"
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            readOnlyRootFilesystem: true            
           volumeMounts:
             - name: rootfs
               mountPath: /host
@@ -35,7 +33,6 @@ spec:
           ports:
             - name: metrics
               containerPort: 9100
-              hostPort: 9100 
               protocol: TCP
       volumes:
         - name: rootfs
