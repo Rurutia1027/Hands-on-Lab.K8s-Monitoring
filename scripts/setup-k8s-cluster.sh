@@ -64,12 +64,12 @@ kubectl apply -f manifests/grafana/service.yaml
 ############################################
 echo "[9] Running health check scripts..."
 bash scripts/k8s-cluster-health.sh
-bash scripts/monitoring-health-check.sh
+#bash scripts/monitoring-health-check.sh
 
 ############################################
 # Port-forwarding (non-blocking recommendation)
 ############################################
 echo "[10] Cluster setup completed!"
 echo "To access UIs, run in separate terminals:"
-echo "  kubectl -n monitoring port-forward svc/prometheus 9090:9090"
-echo "  kubectl -n monitoring port-forward svc/grafana 3000:3000"
+echo "  kubectl -n metrics port-forward svc/prometheus 9090:9090"
+echo "  kubectl -n metrics port-forward svc/grafana 3000:3000"

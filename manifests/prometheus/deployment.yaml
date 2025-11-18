@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: prometheus
-  namespace: metricss
+  namespace: metrics
   labels: 
     app: prometheus 
 spec:

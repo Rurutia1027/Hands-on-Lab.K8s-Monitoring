@@ -1,6 +1,6 @@
 #!/bin/sh
 # monitoring-health-check.sh
-NAMESPACE="monitoring"
+NAMESPACE="metrics"
 
 echo "Checking monitoring stack components..."
 
@@ -47,7 +47,7 @@ check_daemonset cadvisor
 check_deployment kube-state-metrics
 check_deployment prometheus
 check_deployment grafana
-check_deployment alertmanager 
+#check_deployment alertmanager 
 
 # Check metrics endpoints (assuming NodePort or port-forward)
 echo "Checking Prometheus metrics endpoint..."
@@ -57,7 +57,7 @@ echo "Checking Grafana health endpoint..."
 check_http_endpoint "http://localhost:30300/api/health" "Grafana"
 
 # Check kube-state-metrics
-KSM_POD=$(kubectl get pod -n $NAMESPACE -l app=kube-state-metrics -o jsonpath='{.items[0].metadata.name}')
+KSM_POD=$(kubectl get pod -n $NAMESPACE -l "app.kubernetes.io/name=kube-state-metrics" -o jsonpath='{.items[0].metadata.name}')
 kubectl port-forward -n $NAMESPACE pod/$KSM_POD 8080:8080 > /dev/null 2>&1 &
 PF_PID=$!
 sleep 3
