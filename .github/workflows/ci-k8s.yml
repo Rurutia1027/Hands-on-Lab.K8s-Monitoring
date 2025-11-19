@@ -27,7 +27,7 @@ jobs:
     - name: Create Kind Cluster
       run: |
         chmod +x scripts/setup-k8s-cluster-deploy.sh
-        bash scripts/setup-k8s-cluster-deploy.sh scripts/configs/kind-config.yaml
+        bash scripts/setup-k8s-cluster-deploy.sh
 
     - name: Validate Cluster Health
       run: |
