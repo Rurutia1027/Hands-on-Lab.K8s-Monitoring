@@ -1,0 +1,75 @@
+name: CI - Kubernetes Kind & Monitoring Validation
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  kind-validation:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Set up Kind
+      uses: engineerd/setup-kind@v0.5.0
+      with:
+        version: v0.20.0
+
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+
+    - name: Create Kind Cluster
+      run: |
+        chmod +x scripts/setup-k8s-cluster-deploy.sh
+        bash scripts/setup-k8s-cluster-deploy.sh scripts/configs/kind-config.yaml
+
+    - name: Validate Cluster Health
+      run: |
+        chmod +x scripts/k8s-cluster-health.sh
+        bash scripts/k8s-cluster-health.sh
+
+    - name: Deploy Monitoring Components
+      run: |
+        kubectl apply -f manifests/namespace.yaml
+        kubectl apply -f manifests/node-exporter/
+        kubectl apply -f manifests/cadvisor/
+        kubectl apply -f manifests/kube-state-metrics/
+        kubectl apply -f manifests/prometheus/
+        kubectl apply -f manifests/grafana/
+
+        echo "Waiting for pods to be ready..."
+        for i in {1..120}; do
+        not_ready=$(kubectl get pods -A | grep -v 'Running\|Completed' | wc -l)
+        if [ "$not_ready" -eq 0 ]; then
+            echo "All pods are running!"
+            break
+        fi
+        echo "Pods not ready yet, waiting 10 seconds..."
+        sleep 10
+        done
+
+    - name: Validate Monitoring Components
+      run: |
+        chmod +x scripts/monitoring-health-check.sh
+        bash scripts/monitoring-health-check.sh
+
+    - name: Collect Cluster State
+      run: |
+        kubectl get nodes -o wide > cluster-nodes.txt
+        kubectl get pods -A -o wide > cluster-pods.txt
+        kubectl cluster-info dump > cluster-info.txt
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: cluster-state
+        path: |
+          cluster-nodes.txt
+          cluster-pods.txt
+          cluster-info.txt
