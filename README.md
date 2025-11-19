@@ -35,7 +35,7 @@ This repository offers a comprehensive solution for setting up a local Kubernete
 .
 ├── README.md
 ├── design-doc
-│   └── monitor-stack.md
+│   └── monitor-stack.md 
 ├── manifests
 │   ├── alertmanager
 │   ├── cadvisor
@@ -67,7 +67,7 @@ This repository offers a comprehensive solution for setting up a local Kubernete
     │   └── kind-config.yaml
     ├── k8s-cluster-health.sh
     ├── monitoring-health-check.sh
-    └── setup-k8s-cluster.sh
+    └── setup-k8s-cluster.sh # entry point 
 ```
 
 ## Deployment Order 

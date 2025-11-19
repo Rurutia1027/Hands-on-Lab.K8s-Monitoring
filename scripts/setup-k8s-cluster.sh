@@ -19,9 +19,9 @@ echo "Kind cluster '$CLUSTER_NAME' created successfully!"
 cd ../ 
 
 ############################################
-# Create monitoring namespace
+# Create metrics namespace
 ############################################
-echo "[3] Creating 'monitoring' namespace..."
+echo "[3] Creating 'metrics' namespace..."
 kubectl apply -f manifests/namespace.yaml
 
 ############################################
