@@ -3,7 +3,7 @@
 set -e
 
 CLUSTER_NAME="k8s-cluster-monitoring-proj"
-CONFIG_FILE="configs/kind-config.yaml"
+CONFIG_FILE="scripts/configs/kind-config.yaml"
 
 echo "[1] Creating Kind cluster: $CLUSTER_NAME ..."
 kind create cluster --name "$CLUSTER_NAME" --config "$CONFIG_FILE"
