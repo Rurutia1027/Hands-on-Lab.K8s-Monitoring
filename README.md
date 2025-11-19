@@ -1,4 +1,5 @@
 # Kubernetes Cluster Monitoring Stack 
+[![CI - Kubernetes Kind & Monitoring Validation](https://github.com/Rurutia1027/Hands-on-Lab.K8s-Monitoring/actions/workflows/ci-k8s.yml/badge.svg)](https://github.com/Rurutia1027/Hands-on-Lab.K8s-Monitoring/actions/workflows/ci-k8s.yml)
 ## Project Overview 
 
 This repository offers a comprehensive solution for setting up a local Kubernetes development environment with a robust monitoring stack. It is designed to:
@@ -35,7 +36,7 @@ This repository offers a comprehensive solution for setting up a local Kubernete
 .
 ├── README.md
 ├── design-doc
-│   └── monitor-stack.md
+│   └── monitor-stack.md 
 ├── manifests
 │   ├── alertmanager
 │   ├── cadvisor
@@ -67,7 +68,7 @@ This repository offers a comprehensive solution for setting up a local Kubernete
     │   └── kind-config.yaml
     ├── k8s-cluster-health.sh
     ├── monitoring-health-check.sh
-    └── setup-k8s-cluster.sh
+    └── setup-k8s-cluster.sh # entry point 
 ```
 
 ## Deployment Order 
