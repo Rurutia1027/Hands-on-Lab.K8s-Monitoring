@@ -1,4 +1,5 @@
 # Kubernetes Cluster Monitoring Stack 
+[![CI - Kubernetes Kind & Monitoring Validation](https://github.com/Rurutia1027/Hands-on-Lab.K8s-Monitoring/actions/workflows/ci-k8s.yml/badge.svg)](https://github.com/Rurutia1027/Hands-on-Lab.K8s-Monitoring/actions/workflows/ci-k8s.yml)
 ## Project Overview 
 
 This repository offers a comprehensive solution for setting up a local Kubernetes development environment with a robust monitoring stack. It is designed to:
