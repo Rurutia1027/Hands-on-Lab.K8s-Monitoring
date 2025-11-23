@@ -1,0 +1,69 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: metrics
+  labels:
+    app: prometheus
+data:
+  cpu-usage-rules.yml: |
+    groups:
+    - name: pod-traffic
+      interval: 1m
+      rules:
+        - record: container:traffic:5m
+          expr: |
+            sum by (container_label_app) (
+              rate(container_network_receive_bytes_total{
+                interface="eth0",
+                container_label_io_cri_containerd_kind="sandbox"
+              }[5m])
+            )
+          labels:
+            severity: warn        
+    - name: node-cpu-usage
+      interval: 1m
+      rules:
+        # Recording rule: per-node CPU usage percentage over last 5 minutes
+        - record: node:cpu_usage:5m
+          expr: |
+            sum by (instance) (
+              container_memory_usage_bytes{
+                container_label_io_cri_containerd_kind="container"
+              }
+            )
+            /
+            sum by (instance) (machine_memory_bytes)
+            * 100
+          labels:
+            severity: info
+
+        # Alert 1: Node CPU usage high (> 80% for 5m)
+        - alert: NodeHighCPU
+          expr: node:cpu_usage:5m > 80
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Node {{ $labels.instance }} CPU usage is high"
+            description: "CPU usage has been above 80% for the last 5 minutes."
+
+        # Alert 2: Node CPU usage critical (> 90% for 5m)
+        - alert: NodeCriticalCPU
+          expr: node:cpu_usage:5m > 90
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Node {{ $labels.instance }} CPU usage is critical"
+            description: "CPU usage has been above 90% for the last 5 minutes."
+
+        # Alert 3: Node CPU usage back to normal (< 50% for 5m)
+        - alert: NodeCPUBackToNormal
+          expr: node:cpu_usage:5m < 50
+          for: 5m
+          labels:
+            severity: info
+          annotations:
+            summary: "Node {{ $labels.instance }} CPU usage back to normal"
+            description: "CPU usage has dropped below 50% for the last 5 minutes."

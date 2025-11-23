@@ -39,8 +39,6 @@ Each dashboard contains:
 
 ```
 
-
-
 ## Layer 0 -> SLO/User Experience Dashboard 
 This top-level dashboard answers: 
 "Are our users experiencing pain?"
