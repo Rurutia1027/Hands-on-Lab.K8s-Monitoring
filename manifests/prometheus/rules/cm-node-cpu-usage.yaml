@@ -8,6 +8,19 @@ metadata:
 data:
   cpu-usage-rules.yml: |
     groups:
+    - name: pod-traffic
+      interval: 1m
+      rules:
+        - record: container:traffic:5m
+          expr: |
+            sum by (container_label_app) (
+              rate(container_network_receive_bytes_total{
+                interface="eth0",
+                container_label_io_cri_containerd_kind="sandbox"
+              }[5m])
+            )
+          labels:
+            severity: warn        
     - name: node-cpu-usage
       interval: 1m
       rules:
