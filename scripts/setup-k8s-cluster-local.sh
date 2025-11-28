@@ -46,6 +46,7 @@ kubectl apply -f manifests/kube-state-metrics/service.yaml
 echo "[7] Deploying Prometheus..."
 kubectl apply -f manifests/prometheus/rbac.yaml
 kubectl apply -f manifests/prometheus/pvc.yaml
+kubectl apply -f manifests/prometheus/rules/*
 kubectl apply -f manifests/prometheus/configmap.yaml
 kubectl apply -f manifests/prometheus/deployment.yaml
 kubectl apply -f manifests/prometheus/service.yaml
