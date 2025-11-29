@@ -1,5 +1,5 @@
 #!/bin/sh
-# setup-k8s-cluster-local.sh
+# setup-k8s-cluster.sh
 # Refined version: focus on Kube-State-Metrics, Prometheus, Grafana
 set -euo pipefail
 

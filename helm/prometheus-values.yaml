@@ -1,21 +1,21 @@
-# Prometheus Helm values (refined from your raw YAML)
+# Prometheus Helm values
 server:
   global:
     scrape_interval: 15s
     evaluation_interval: 15s
 
-  # Prometheus config file
+  # Prometheus scrape configs
   extraScrapeConfigs: |
     scrape_configs:
       # --- Prometheus self ---
       - job_name: 'prometheus'
         static_configs:
-          - targets: ['prometheus:9090']
+          - targets: ['prometheus-server.metrics.svc.cluster.local:80']
 
       # --- Kube-State-Metrics ---
       - job_name: 'kube-state-metrics'
         static_configs:
-          - targets: ['kube-state-metrics:8080']
+          - targets: ['kube-state-metrics.metrics.svc.cluster.local:8080']
 
       # --- Kubernetes API Server ---
       - job_name: 'kube-apiserver'
@@ -44,7 +44,7 @@ server:
             regex: 'kube-scheduler'
             action: keep
 
-      # --- Kubelet Metrics ---
+      # --- Kubelet Metrics (nodes only) ---
       - job_name: 'kubelet'
         kubernetes_sd_configs:
           - role: node
@@ -58,13 +58,14 @@ server:
           - source_labels: [__meta_kubernetes_node_name]
             target_label: kubernetes_node
 
-  # PVC for Prometheus data
+  # Persistent volume for Prometheus data
   persistence:
     enabled: true
     storageClass: standard
     accessModes: ["ReadWriteOnce"]
     size: 5Gi
 
+  # Resources
   resources:
     requests:
       cpu: 250m
@@ -83,6 +84,5 @@ server:
   serviceAccount:
     create: true
     name: prometheus
-
   rbac:
     create: true
