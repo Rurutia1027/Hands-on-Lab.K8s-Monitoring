@@ -1,37 +1,21 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: prometheus-config
-  namespace: metrics
-  labels:
-    app: prometheus
-data:
-  prometheus.yml: |
-    global:
-      scrape_interval: 15s
-      evaluation_interval: 15s
-    rule_files:
-      - /etc/prometheus/rules/*.yml
+# Prometheus Helm values
+server:
+  global:
+    scrape_interval: 15s
+    evaluation_interval: 15s
+
+  # Prometheus scrape configs
+  extraScrapeConfigs: |
     scrape_configs:
       # --- Prometheus self ---
       - job_name: 'prometheus'
         static_configs:
-          - targets: ['prometheus:9090']
+          - targets: ['prometheus-server.metrics.svc.cluster.local:80']
 
-      # --- Node Exporter ---
-      - job_name: 'node-exporter'
-        static_configs:
-          - targets: ['node-exporter:9100']
-
-      # --- cAdvisor (container metrics) ---
-      - job_name: 'cadvisor'
-        static_configs:
-          - targets: ['cadvisor:8080']
-
-      # --- Kube-State-Metrics (object state) ---
+      # --- Kube-State-Metrics ---
       - job_name: 'kube-state-metrics'
         static_configs:
-          - targets: ['kube-state-metrics:8080']
+          - targets: ['kube-state-metrics.metrics.svc.cluster.local:8080']
 
       # --- Kubernetes API Server ---
       - job_name: 'kube-apiserver'
@@ -60,7 +44,7 @@ data:
             regex: 'kube-scheduler'
             action: keep
 
-      # --- Kubelet Metrics (node runtime + pod stats) ---
+      # --- Kubelet Metrics (nodes only) ---
       - job_name: 'kubelet'
         kubernetes_sd_configs:
           - role: node
@@ -73,3 +57,32 @@ data:
         relabel_configs:
           - source_labels: [__meta_kubernetes_node_name]
             target_label: kubernetes_node
+
+  # Persistent volume for Prometheus data
+  persistence:
+    enabled: true
+    storageClass: standard
+    accessModes: ["ReadWriteOnce"]
+    size: 5Gi
+
+  # Resources
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1
+      memory: 2Gi
+
+  # Service type
+  service:
+    type: NodePort
+    nodePort: 30090
+    port: 9090
+
+  # RBAC
+  serviceAccount:
+    create: true
+    name: prometheus
+  rbac:
+    create: true
