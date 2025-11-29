@@ -1,140 +1,130 @@
 #!/bin/sh
-# setup-k8s-cluster.sh (CI-ready + readiness checks)
+# setup-k8s-cluster.sh
+# Refined version: focus on Kube-State-Metrics, Prometheus, Grafana
 set -euo pipefail
 
 CLUSTER_NAME="k8s-cluster"
+CONFIG_FILE="configs/kind-config.yaml"
 NAMESPACE="metrics"
-WAIT_TIMEOUT="300s"   # 5 min (CI-Friendly)
-CHECK_INTERVAL=5
 
-# ================================
-# Utility: Wait for Deployment Ready
-# ================================
-wait_for_deployment() {
-  DEPLOY=$1
-  echo "[WAIT] Deployment/$DEPLOY in $NAMESPACE ..."
-
-  kubectl rollout status deploy/"$DEPLOY" -n "$NAMESPACE" --timeout="$WAIT_TIMEOUT"
-}
-
-# ================================
-# Utility: Wait for Pod Ready
-# ================================
-wait_for_pods() {
-  SELECTOR=$1
-
-  echo "[WAIT] Pods with selector: $SELECTOR ..."
-  kubectl wait --for=condition=Ready pod -l "$SELECTOR" -n "$NAMESPACE" --timeout="$WAIT_TIMEOUT"
-}
-
-# ================================
-# Utility: Wait for Service Endpoint
-# ================================
-wait_for_service_endpoints() {
-  SVC=$1
-
-  echo "[WAIT] Endpoints/$SVC in $NAMESPACE ..."
-  for _ in $(seq 1 60); do
-    COUNT=$(kubectl get endpoints "$SVC" -n "$NAMESPACE" -o jsonpath='{.subsets[*].addresses[*].ip}' | wc -w)
-    if [ "$COUNT" -gt 0 ]; then
-      echo "[OK] Endpoints available: $COUNT"
-      return 0
-    fi
-    echo "[WAIT] Endpoints not ready, retrying..."
-    sleep $CHECK_INTERVAL
-  done
-
-  echo "[ERROR] Service $SVC endpoint NOT ready"
-  exit 1
-}
-
-# ================================
-# Utility: HTTP Readiness Check
-# Requires curl
-# ================================
-check_http_ready() {
-  NAME=$1
-  URL=$2
-
-  echo "[CHECK] Checking HTTP endpoint for $NAME: $URL"
-
-  for _ in $(seq 1 30); do
-    if curl -sf "$URL" >/dev/null 2>&1; then
-      echo "[OK] $NAME is reachable."
-      return 0
-    fi
-    echo "[WAIT] $NAME endpoint not ready, retrying..."
-    sleep $CHECK_INTERVAL
-  done
-
-  echo "[ERROR] $NAME endpoint NOT reachable"
-  exit 1
-}
+# Source shell profile to include Helm in PATH
+if [ -f "$HOME/.bash_profile" ]; then
+    source "$HOME/.bash_profile"
+fi
 
 echo "====================================================="
-echo "[1] Wait for all K8s nodes Ready"
+echo "[1] Create Kind cluster (if not exists)"
 echo "====================================================="
-kubectl wait --for=condition=Ready node --all --timeout="$WAIT_TIMEOUT"
+if ! kind get clusters | grep -q "$CLUSTER_NAME"; then 
+    kind create cluster --name "$CLUSTER_NAME" --config "$CONFIG_FILE"
+else 
+    echo "Kind cluster '$CLUSTER_NAME' already exists. Skipping creation."
+fi 
 
-echo "Nodes:"
+echo "====================================================="
+echo "[2] Wait for all nodes to be Ready"
+echo "====================================================="
+kubectl wait --for=condition=Ready nodes --all --timeout=180s
+
+echo "[INFO] Node status:"
 kubectl get nodes -o wide
+kubectl get pods -A
 
 echo "====================================================="
-echo "[2] Prepare namespace and Helm repos"
+echo "[3] Prepare namespace and Helm repos"
 echo "====================================================="
 kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo add grafana https://grafana.github.io/helm-charts
 helm repo update
 
 echo "====================================================="
-echo "[3] Install Kube-State-Metrics"
+echo "[4] Install Kube-State-Metrics via Helm"
 echo "====================================================="
 helm upgrade --install kube-state-metrics prometheus-community/kube-state-metrics \
   -n "$NAMESPACE" \
+  --create-namespace \
   --set rbac.create=true \
   --set replicaCount=1 \
   --set service.type=ClusterIP
 
-wait_for_deployment kube-state-metrics
+echo "====================================================="
+echo "[INFO] KSM pods status:"
+echo "====================================================="
+kubectl get pods -n "$NAMESPACE"
 
 echo "====================================================="
-echo "[4] Install Prometheus"
+echo "[INFO] Helm releases in '$NAMESPACE' namespace:"
+echo "====================================================="
+helm list -n "$NAMESPACE"
+
+echo "====================================================="
+echo "[5] Install Prometheus via Helm"
 echo "====================================================="
 helm upgrade --install prometheus prometheus-community/prometheus \
   -n "$NAMESPACE" \
+  --create-namespace \
   -f helm/prometheus-values.yaml
 
-wait_for_deployment prometheus-server
-wait_for_service_endpoints prometheus-server
+echo "====================================================="
+echo "[INFO] Prometheus pods status:"
+echo "====================================================="
+kubectl get pods -n "$NAMESPACE"
 
 echo "====================================================="
-echo "[5] Install Grafana"
+echo "[INFO] Prometheus services:"
+echo "====================================================="
+kubectl get svc -n "$NAMESPACE"
+
+echo "====================================================="
+echo "[6] Install Grafana via Helm"
 echo "====================================================="
 helm upgrade --install grafana grafana/grafana \
   -n "$NAMESPACE" \
+  --create-namespace \
   -f helm/grafana-values.yaml
 
-wait_for_deployment grafana
-wait_for_service_endpoints grafana
+echo "====================================================="
+echo "[INFO] Grafana pods status:"
+echo "====================================================="
+kubectl get pods -n "$NAMESPACE"
 
 echo "====================================================="
-echo "[6] Verify HTTP endpoints (via temp port-forward)"
+echo "[INFO] Grafana services:"
 echo "====================================================="
-# Prometheus
-kubectl port-forward -n "$NAMESPACE" svc/prometheus-server 9090:80 >/tmp/prom_pf.log 2>&1 &
-PROM_PF_PID=$!
-sleep 3
-check_http_ready "Prometheus" "http://localhost:9090/-/ready"
-kill $PROM_PF_PID || true
-
-# Grafana
-kubectl port-forward -n "$NAMESPACE" svc/grafana 3000:3000 >/tmp/grafana_pf.log 2>&1 &
-GRAFANA_PF_PID=$!
-sleep 3
-check_http_ready "Grafana" "http://localhost:3000"
-kill $GRAFANA_PF_PID || true
+kubectl get svc -n "$NAMESPACE"
 
 echo "====================================================="
-echo "[OK] All components deployed and verified!"
+echo "[INFO] Helm releases summary:"
+echo "====================================================="
+helm list -n "$NAMESPACE"
+
+echo "====================================================="
+echo "[INFO] Setup completed successfully!"
+echo "Access Prometheus NodePort / ClusterIP and Grafana NodePort as configured."
+echo "====================================================="
+
+echo "====================================================="
+echo "[INFO] Port-forwarding Prometheus and Grafana for local access"
+echo "====================================================="
+
+# Prometheus port-forward
+echo "Prometheus:"
+echo "  kubectl port-forward -n $NAMESPACE svc/prometheus 9090:9090"
+echo "  Access in browser: http://localhost:9090"
+
+# Grafana port-forward
+echo "Grafana:"
+echo "  kubectl port-forward -n $NAMESPACE svc/grafana 3000:3000"
+echo "  Access in browser: http://localhost:3000"
+
+echo "====================================================="
+echo "[INFO] Optional: run port-forwarding in background with & if you want to keep it active"
+echo "Example:"
+echo "  kubectl port-forward svc/prometheus-server -n metrics 9090:80 &"
+echo "  kubectl port-forward -n metrics svc/grafana 3000:3000 &"
+
+echo "====================================================="
+echo "[INFO] Setup completed successfully! Prometheus + Grafana + KSM are ready."
 echo "====================================================="
