@@ -1,7 +1,6 @@
 #!/bin/sh
 # setup-k8s-cluster.sh
 # Refined version: focus on Kube-State-Metrics, Prometheus, Grafana
-set -euo pipefail
 
 CLUSTER_NAME="k8s-cluster"
 CONFIG_FILE="configs/kind-config.yaml"
