@@ -9,22 +9,66 @@ on:
 jobs:
   kind-validation:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
-    - name: Set up Kind
-      uses: engineerd/setup-kind@v0.5.0
+    - name: Install Helm
+      uses: azure/setup-helm@v3
       with:
-        version: v0.20.0
+        version: "latest"
 
-    - name: Set up kubectl
+    - name: Install kubectl
       uses: azure/setup-kubectl@v3
       with:
-        version: 'latest'
+        version: "latest"
 
-    - name: Create Kind Cluster
+    - name: Install Kind
+      uses: engineerd/setup-kind@v0.5.0
+      with:
+        version: "v0.20.0"
+
+    # Optional: cache Docker layers for faster CI
+    - name: Cache Docker images
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.docker-cache
+        key: docker-cache-${{ runner.os }}
+      continue-on-error: true
+
+    - name: Make setup script executable
+      run: chmod +x setup-k8s-cluster.sh
+
+    - name: Run Kubernetes Monitoring Setup
+      id: setup
       run: |
-        chmod +x setup-k8s-cluster.sh
-        bash setup-k8s-cluster.sh
+        echo "==============================================="
+        echo " Running setup-k8s-cluster.sh"
+        echo "==============================================="
+        ./setup-k8s-cluster.sh
+
+    # ============================
+    # Diagnostics if failure
+    # ============================
+    - name: Print Diagnostics on Failure
+      if: failure()
+      run: |
+        echo "==============================================="
+        echo "[DIAGNOSTICS] Dumping Kubernetes State"
+        echo "==============================================="
+        kubectl get nodes -o wide || true
+        kubectl get pods -A || true
+        kubectl describe pods -A || true
+        kubectl get svc -A || true
+        kubectl get events -A --sort-by=.metadata.creationTimestamp || true
+
+    # ============================
+    # Optional: Cleanup Kind after CI
+    # ============================
+    - name: Delete Kind Cluster
+      if: always()
+      run: |
+        echo "Cleaning up Kind cluster..."
+        kind delete cluster --name k8s-cluster || true
