@@ -1,6 +1,6 @@
 #!/bin/sh
 # setup-k8s-cluster.sh
-# Refined version: focus on Kube-State-Metrics, Prometheus, Grafana
+# Refined version: focus on Prometheus, Grafana, and Loki
 
 CLUSTER_NAME="k8s-cluster"
 CONFIG_FILE="configs/kind-config.yaml"
@@ -12,16 +12,16 @@ if [ -f "$HOME/.bash_profile" ]; then
 fi
 
 echo "====================================================="
-echo "[1] Create Kind cluster (if not exists)"
+echo "[1] Creating Kind cluster (if not already exists)"
 echo "====================================================="
 if ! kind get clusters | grep -q "$CLUSTER_NAME"; then 
     kind create cluster --name "$CLUSTER_NAME" --config "$CONFIG_FILE"
 else 
-    echo "Kind cluster '$CLUSTER_NAME' already exists. Skipping creation."
+    echo "[INFO] Kind cluster '$CLUSTER_NAME' already exists. Skipping creation."
 fi 
 
 echo "====================================================="
-echo "[2] Wait for all nodes to be Ready"
+echo "[2] Waiting for all nodes to be Ready..."
 echo "====================================================="
 kubectl wait --for=condition=Ready nodes --all --timeout=180s
 
@@ -30,100 +30,70 @@ kubectl get nodes -o wide
 kubectl get pods -A
 
 echo "====================================================="
-echo "[3] Prepare namespace and Helm repos"
+echo "[3] Setting up namespace and Helm repositories"
 echo "====================================================="
 kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo add grafana https://grafana.github.io/helm-charts
 helm repo update
+echo "[INFO] Helm repositories updated"
 
 echo "====================================================="
-echo "[4] Install Kube-State-Metrics via Helm"
-echo "====================================================="
-helm upgrade --install kube-state-metrics prometheus-community/kube-state-metrics \
-  -n "$NAMESPACE" \
-  --create-namespace \
-  --set rbac.create=true \
-  --set replicaCount=1 \
-  --set service.type=ClusterIP
-
-echo "====================================================="
-echo "[INFO] KSM pods status:"
-echo "====================================================="
-kubectl get pods -n "$NAMESPACE"
-
-echo "====================================================="
-echo "[INFO] Helm releases in '$NAMESPACE' namespace:"
-echo "====================================================="
-helm list -n "$NAMESPACE"
-
-echo "====================================================="
-echo "[5] Install Prometheus via Helm"
+echo "[4] Installing Prometheus via Helm"
 echo "====================================================="
 helm upgrade --install prometheus prometheus-community/prometheus \
   -n "$NAMESPACE" \
   --create-namespace \
   -f helm/prometheus-values.yaml
 
-echo "====================================================="
-echo "[INFO] Prometheus pods status:"
-echo "====================================================="
+echo "[INFO] Prometheus pods:"
 kubectl get pods -n "$NAMESPACE"
 
-echo "====================================================="
 echo "[INFO] Prometheus services:"
-echo "====================================================="
 kubectl get svc -n "$NAMESPACE"
 
 echo "====================================================="
-echo "[6] Install Grafana via Helm"
+echo "[5] Installing Grafana via Helm"
 echo "====================================================="
 helm upgrade --install grafana grafana/grafana \
   -n "$NAMESPACE" \
   --create-namespace \
   -f helm/grafana-values.yaml
 
-echo "====================================================="
-echo "[INFO] Grafana pods status:"
-echo "====================================================="
+echo "[INFO] Grafana pods:"
 kubectl get pods -n "$NAMESPACE"
 
-echo "====================================================="
 echo "[INFO] Grafana services:"
-echo "====================================================="
 kubectl get svc -n "$NAMESPACE"
 
-echo "====================================================="
-echo "[INFO] Helm releases summary:"
-echo "====================================================="
+echo "[INFO] Current Helm releases in namespace '$NAMESPACE':"
 helm list -n "$NAMESPACE"
 
 echo "====================================================="
+echo "[INFO] Installing Loki stack (logs aggregation)"
+echo "====================================================="
+helm install loki grafana/loki-stack --namespace $NAMESPACE
+kubectl get pods -n $NAMESPACE
+
+echo "====================================================="
 echo "[INFO] Setup completed successfully!"
-echo "Access Prometheus NodePort / ClusterIP and Grafana NodePort as configured."
-echo "====================================================="
-
-echo "====================================================="
-echo "[INFO] Port-forwarding Prometheus and Grafana for local access"
-echo "====================================================="
-
-# Prometheus port-forward
+echo "[INFO] Access Prometheus and Grafana via NodePort / ClusterIP as configured."
+echo "-----------------------------------------------------"
 echo "Prometheus:"
 echo "  kubectl port-forward -n $NAMESPACE svc/prometheus 9090:9090"
-echo "  Access in browser: http://localhost:9090"
-
-# Grafana port-forward
+echo "  Browser URL: http://localhost:9090"
 echo "Grafana:"
 echo "  kubectl port-forward -n $NAMESPACE svc/grafana 3000:3000"
-echo "  Access in browser: http://localhost:3000"
+echo "  Browser URL: http://localhost:3000"
 
-echo "====================================================="
-echo "[INFO] Optional: run port-forwarding in background with & if you want to keep it active"
+echo "-----------------------------------------------------"
+echo "[TIP] Optional: run port-forward in background with & to keep it active"
 echo "Example:"
-echo "  kubectl port-forward svc/prometheus-server -n metrics 9090:80 &"
-echo "  kubectl port-forward -n metrics svc/grafana 3000:3000 &"
+echo "  kubectl port-forward svc/prometheus-server -n $NAMESPACE 9090:80 &"
+echo "  kubectl port-forward -n $NAMESPACE svc/grafana 3000:3000 &"
 
 echo "====================================================="
-echo "[INFO] Setup completed successfully! Prometheus + Grafana + KSM are ready."
+echo "[INFO] Full stack ready: Prometheus + Grafana + Loki"
 echo "====================================================="
+helm list -n "$NAMESPACE"
