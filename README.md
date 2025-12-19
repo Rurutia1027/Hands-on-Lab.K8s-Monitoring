@@ -1,4 +1,4 @@
-# Observability Stack on Kubernetes Kind (Prometheus + Grafana)
+# Observability Stack on Kubernetes Kind (Prometheus + Grafana) | [![CI - Kubernetes Kind & Monitoring Validation](https://github.com/Rurutia1027/Hands-on-Lab.K8s-Monitoring/actions/workflows/ci-k8s.yml/badge.svg)](https://github.com/Rurutia1027/Hands-on-Lab.K8s-Monitoring/actions/workflows/ci-k8s.yml)
 
 This repository provides a streamlined, reproducible environment for building and validating a complete Observability Stack on a local Kind Kubernetes cluster.
 It focuses on Prometheus-based metrics collection and Grafana visualization, using Helm for deployment.
